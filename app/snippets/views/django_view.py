@@ -1,11 +1,16 @@
 from django.http import HttpResponse
-from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import Snippet
-from .serializers import SnippetSerializer
+from ..models import Snippet
+from ..serializers import SnippetSerializer
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
+
+
+__all__ = (
+    'snippet_list',
+    'snippet_detail',
+)
 
 
 class JSONResponse(HttpResponse):
