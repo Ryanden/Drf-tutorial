@@ -1,19 +1,15 @@
 import random
 
-from django.test import TestCase
-
-# Create your tests here.
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .serializers import SnippetSerializer
-from rest_framework.parsers import JSONParser
-from rest_framework.renderers import JSONRenderer
 from rest_framework.test import APIRequestFactory
-from django.utils.six import BytesIO
+
 import json
 
 from .models import Snippet
+
+
 class SnippetListTest(APITestCase):
     """
     Snippet List 요청에 대한 테스트
@@ -67,3 +63,27 @@ class SnippetListTest(APITestCase):
             [item['pk'] for item in python_data],
             list(Snippet.objects.order_by('-created').values_list('pk', flat=True))
         )
+
+
+class SnippetCreateTest(APIRequestFactory):
+
+    def test_snippet_create_status_code(self):
+        """
+        201이 돌아오는지
+        :return:
+        """
+        pass
+
+    def test_snippet_create_save_db(self):
+        """
+        요청 후 실제 DB 에 저장 되었는지
+        :return:
+        """
+        pass
+
+    def test_snippet_create_missing_code_raise_exception(self):
+        """
+        'code'에 데이터가 주어지지 않으 경우 적절한 Exception 이 발생 하는지
+        :return:
+        """
+        pass
