@@ -25,7 +25,7 @@ def snippet_list(request):
 
     if request.method == 'GET':
 
-        snippets = Snippet.objects.all()
+        snippets = Snippet.objects.order_by('-pk')
         serializer = SnippetSerializer(snippets, many=True)
         json_data = JSONRenderer().render(serializer.data)
         return HttpResponse(json_data, content_type='application/json')
