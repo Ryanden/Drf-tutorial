@@ -14,10 +14,13 @@ CREATE_DATA= '''{
     
 }'''
 
+
 class SnippetListTest(APITestCase):
     """
     Snippet List 요청에 대한 테스트
     """
+
+    URL = '/snippets/generic_dbv/snippets'
 
     def test_status_code(self):
         """
@@ -25,7 +28,7 @@ class SnippetListTest(APITestCase):
         :return:
         """
 
-        response = self.client.get('/snippets/django_view/snippets/')
+        response = self.client.get(self.URL)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -37,7 +40,7 @@ class SnippetListTest(APITestCase):
 
         self.create_dummy_data()
 
-        response = self.client.get('/snippets/django_view/snippets/')
+        response = self.client.get(self.URL)
 
         python_data = json.loads(response.content)
 
@@ -55,7 +58,7 @@ class SnippetListTest(APITestCase):
 
         self.create_dummy_data()
 
-        response = self.client.get('/snippets/django_view/snippets/')
+        response = self.client.get(self.URL)
 
         python_data = json.loads(response.content)
 
@@ -78,13 +81,13 @@ class SnippetCreateTest(APITestCase):
         """
 
         response = self.client.post(
-            '/snippets/django_view/snippets/',
+            self.URL,
             data=CREATE_DATA,
             content_type='application/django_view/snippets/'
         )
 
         response = self.client.post(
-            '/snippets/django_view/snippets/',
+            self.URL,
             data={
                 'code': "print('hello wold'}",
             },
@@ -107,7 +110,7 @@ class SnippetCreateTest(APITestCase):
         }
 
         response = self.client.post(
-            '/snippets/django_view/snippets/',
+            self.URL,
             data=snippet_data,
             format='json'
         )
