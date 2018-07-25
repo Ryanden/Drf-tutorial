@@ -3,11 +3,17 @@ import random
 
 from django.contrib.auth import get_user_model
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
+from rest_framework.test import APITestCase
 
 from .models import Snippet
 
 User = get_user_model()
+
+DUMMY_USER_USERNAME = 'dummy_username'
+
+
+def get_dummy_user():
+    return User.objects.create_user(username=DUMMY_USER_USERNAME)
 
 
 class SnippetListTest(APITestCase):
@@ -35,7 +41,7 @@ class SnippetListTest(APITestCase):
         :return:
         """
 
-        user = User.objects.create_user(username='rec')
+        user = get_dummy_user()
 
         for i in range(random.randint(10, 100)):
             Snippet.objects.create(code=f'a = {i}', owner=user)
@@ -52,7 +58,7 @@ class SnippetListTest(APITestCase):
         :return:
         """
 
-        user = User.objects.create_user(username='rec')
+        user = get_dummy_user()
         for i in range(random.randint(5, 10)):
             Snippet.objects.create(code=f'a = {i}', owner=user)
         response = self.client.get(self.URL)
@@ -76,78 +82,92 @@ class SnippetListTest(APITestCase):
             list(Snippet.objects.order_by('-created').values_list('pk', flat=True))
         )
 
-# CREATE_DATA = '''{
-#     "code": "print('hello, world')"
-# }'''
-#
-#
-# class SnippetCreateTest(APITestCase):
-#     URL = '/snippets/generic_cbv/snippets/'
-#
-#     def test_snippet_create_status_code(self):
-#         """
-#         201이 돌아오는지
-#         :return:
-#         """
-#         # 실제 JSON형식 데이터를 전송
-#         # response = self.client.post(
-#         #     '/snippets/django_view/snippets/',
-#         #     data=CREATE_DATA,
-#         #     content_type='application/json',
-#         # )
-#
-#         response = self.client.post(
-#             self.URL,
-#             data={
-#                 'code': "print('hello, world')",
-#             },
-#             format='json',
-#         )
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#
-#     def test_snippet_create_save_db(self):
-#         """
-#         요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
-#         :return:
-#         """
-#         # 생성할 Snippet에 사용될 정보
-#         snippet_data = {
-#             'title': 'SnippetTitle',
-#             'code': 'SnippetCode',
-#             'linenos': True,
-#             'language': 'c',
-#             'style': 'monokai',
-#         }
-#
-#         response = self.client.post(
-#             self.URL,
-#             data=snippet_data,
-#             format='json',
-#         )
-#         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#         data = json.loads(response.content)
-#
-#         # response로 받은 데이터와 Snippet생성시 사용한 데이터가 같은지 확인
-#         for key in snippet_data:
-#             self.assertEqual(data[key], snippet_data[key])
-#
-#     def test_snippet_create_missing_code_raise_exception(self):
-#         """
-#         'code'데이터가 주어지지 않을 경우 적절한 Exception이 발생하는지
-#         :return:
-#         """
-#         # code만 주어지지 않은 데이터
-#         snippet_data = {
-#             'title': 'SnippetTitle',
-#             'linenos': True,
-#             'language': 'c',
-#             'style': 'monokai',
-#         }
-#         response = self.client.post(
-#             self.URL,
-#             data=snippet_data,
-#             format='json',
-#         )
-#
-#         # code가 주어지지 않으면 HTTP상태코드가 400이어야 함
-#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+CREATE_DATA = '''{
+    "code": "print('hello, world')"
+}'''
+
+
+class SnippetCreateTest(APITestCase):
+    URL = '/snippets/generic_cbv/snippets/'
+
+    def test_snippet_create_status_code(self):
+        """
+        201이 돌아오는지
+        :return:
+        """
+        # 실제 JSON형식 데이터를 전송
+        # response = self.client.post(
+        #     '/snippets/django_view/snippets/',
+        #     data=CREATE_DATA,
+        #     content_type='application/json',
+        # )
+
+        user = get_dummy_user()
+        self.client.force_authenticate(user)
+        for i in range(random.randint(5, 10)):
+            Snippet.objects.create(code=f'a = {i}', owner=user)
+
+        response = self.client.post(
+            self.URL,
+            data={
+                'code': "print('hello, world')",
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_snippet_create_save_db(self):
+        """
+        요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
+        :return:
+        """
+        user = get_dummy_user()
+        self.client.force_authenticate(user)
+
+        # 생성할 Snippet에 사용될 정보
+        snippet_data = {
+            'title': 'SnippetTitle',
+            'code': 'SnippetCode',
+            'linenos': True,
+            'language': 'c',
+            'style': 'monokai',
+        }
+
+        response = self.client.post(
+            self.URL,
+            data=snippet_data,
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        data = json.loads(response.content)
+
+        # response로 받은 데이터와 Snippet생성시 사용한 데이터가 같은지 확인
+        for key in snippet_data:
+            self.assertEqual(data[key], snippet_data[key])
+
+        self.assertEqual(data['owner'], user.username)
+
+    def test_snippet_create_missing_code_raise_exception(self):
+        """
+        'code'데이터가 주어지지 않을 경우 적절한 Exception이 발생하는지
+        :return:
+        """
+        # code만 주어지지 않은 데이터
+
+        user = get_dummy_user()
+        self.client.force_authenticate(user)
+        snippet_data = {
+            'title': 'SnippetTitle',
+            'linenos': True,
+            'language': 'c',
+            'style': 'monokai',
+        }
+        response = self.client.post(
+            self.URL,
+            data=snippet_data,
+            format='json',
+        )
+
+        # code가 주어지지 않으면 HTTP상태코드가 400이어야 함
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
