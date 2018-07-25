@@ -8,9 +8,12 @@ from rest_framework.test import APITestCase
 from .serializers.users import UserListSerializer
 from .models import Snippet
 
+from django.core.paginator import Paginator
+
 User = get_user_model()
 
 DUMMY_USER_USERNAME = 'dummy_username'
+
 
 def get_dummy_user():
     return User.objects.create_user(username=DUMMY_USER_USERNAME)
@@ -49,9 +52,14 @@ class SnippetListTest(APITestCase):
         response = self.client.get(self.URL)
         data = json.loads(response.content)
 
+        # p = Paginator(temp, 1)
+        # print('페이지넘버:', p.num_pages)
+        # print('페이지카운트:', p.count)
+        # print('자료:', p.object_list)
+
         # response로 받은 JSON데이터의 길이와
         # Snippet테이블의 자료수(COUNT)가 같은지
-        self.assertEqual(len(data), Snippet.objects.count())
+        self.assertEqual(data['count'], Snippet.objects.count())
 
     def test_snippet_list_order_by_created_descending(self):
         """
@@ -78,12 +86,11 @@ class SnippetListTest(APITestCase):
         # for snippet in snippets:
         #     snippets_pk_list.append(snippet.pk)
 
-        self.assertEqual(
-            # JSON으로 전달받은 데이터에서 pk만 꺼낸 리스트
-            [item['pk'] for item in data],
-            # DB에서 created역순으로 pk값만 가져온 QuerySet으로 만든 리스트
-            list(Snippet.objects.order_by('-created').values_list('pk', flat=True))
-        )
+        # DB에서 created역순으로 pk값만 가져온 QuerySet으로 만든 리스트
+        snippet_list = list(Snippet.objects.order_by('-created').values_list('pk', flat=True))
+
+        # JSON으로 전달받은 데이터에서 pk만 꺼낸 리스트와 쿼리셋으로 만든 리스트를 슬라이스해서 비교
+        self.assertEqual([item['pk'] for item in data['results']], snippet_list[:3])
 
 
 CREATE_DATA = '''{

@@ -1,14 +1,13 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
 
+from utils.paginations import SnippetListPagination
 from ..models import Snippet
 from ..serializers import (
     SnippetDetailSerializer,
     SnippetListSerializer,
 )
 from ..serializers.users import UserListSerializer
-
-from ..serializers.pagination import LargeResultsSetPagination
 
 User = get_user_model()
 
@@ -23,6 +22,7 @@ __all__ = (
 class SnippetList(generics.ListCreateAPIView):
     queryset = Snippet.objects.all()
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    pagination_class = SnippetListPagination
 
     def get_serializer_class(self):
         # GET, POST요청 (List, Create)시마다 다른 Serializer를 쓰도록
@@ -56,8 +56,3 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserListSerializer
-
-
-class SnippetPagination(generics.ListAPIView):
-    queryset = Snippet.objects.all()
-    serializer_class =
