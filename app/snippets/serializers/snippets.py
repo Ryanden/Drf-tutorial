@@ -1,24 +1,22 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .user import UserListSerializer
+from .users import UserListSerializer
 from ..models import Snippet
 
 User = get_user_model()
 
 __all__ = (
-    'SnippetBaseSerializer',
     'SnippetListSerializer',
     'SnippetDetailSerializer',
 )
 
 
 class SnippetBaseSerializer(serializers.ModelSerializer):
-    owner = UserListSerializer()
+    owner = UserListSerializer(required=False)
 
     class Meta:
         model = Snippet
-
         fields = (
             'pk',
             'title',
@@ -27,7 +25,6 @@ class SnippetBaseSerializer(serializers.ModelSerializer):
             'style',
             'owner',
         )
-
         read_only_fields = (
             'owner',
         )

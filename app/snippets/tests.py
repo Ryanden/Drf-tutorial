@@ -5,12 +5,12 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from .serializers.users import UserListSerializer
 from .models import Snippet
 
 User = get_user_model()
 
 DUMMY_USER_USERNAME = 'dummy_username'
-
 
 def get_dummy_user():
     return User.objects.create_user(username=DUMMY_USER_USERNAME)
@@ -40,11 +40,12 @@ class SnippetListTest(APITestCase):
             테스트시 임의로 몇 개의 Snippet을 만들고 진행 (테스트DB는 초기화된 상태로 시작)
         :return:
         """
-
         user = get_dummy_user()
-
         for i in range(random.randint(10, 100)):
-            Snippet.objects.create(code=f'a = {i}', owner=user)
+            Snippet.objects.create(
+                code=f'a = {i}',
+                owner=user,
+            )
         response = self.client.get(self.URL)
         data = json.loads(response.content)
 
@@ -57,10 +58,12 @@ class SnippetListTest(APITestCase):
         Snippet List의 결과가 생성일자 내림차순인지 확인
         :return:
         """
-
         user = get_dummy_user()
         for i in range(random.randint(5, 10)):
-            Snippet.objects.create(code=f'a = {i}', owner=user)
+            Snippet.objects.create(
+                code=f'a = {i}',
+                owner=user,
+            )
         response = self.client.get(self.URL)
         data = json.loads(response.content)
         # snippets = Snippet.objects.order_by('-created')
@@ -102,12 +105,8 @@ class SnippetCreateTest(APITestCase):
         #     data=CREATE_DATA,
         #     content_type='application/json',
         # )
-
         user = get_dummy_user()
-        self.client.force_authenticate(user)
-        for i in range(random.randint(5, 10)):
-            Snippet.objects.create(code=f'a = {i}', owner=user)
-
+        self.client.force_authenticate(user=user)
         response = self.client.post(
             self.URL,
             data={
@@ -122,9 +121,6 @@ class SnippetCreateTest(APITestCase):
         요청 후 실제 DB에 저장되었는지 (모든 필드값이 정상적으로 저장되는지)
         :return:
         """
-        user = get_dummy_user()
-        self.client.force_authenticate(user)
-
         # 생성할 Snippet에 사용될 정보
         snippet_data = {
             'title': 'SnippetTitle',
@@ -134,6 +130,8 @@ class SnippetCreateTest(APITestCase):
             'style': 'monokai',
         }
 
+        user = get_dummy_user()
+        self.client.force_authenticate(user=user)
         response = self.client.post(
             self.URL,
             data=snippet_data,
@@ -142,11 +140,24 @@ class SnippetCreateTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         data = json.loads(response.content)
 
-        # response로 받은 데이터와 Snippet생성시 사용한 데이터가 같은지 확인
-        for key in snippet_data:
-            self.assertEqual(data[key], snippet_data[key])
+        # 아래 필드값들에 대해 생성시 사용한 데이터와
+        # response로 전달받은 데이터의 값이 같은지 확인
+        check_fields = [
+            'title',
+            'linenos',
+            'language',
+            'style',
+        ]
+        for field in check_fields:
+            self.assertEqual(data[field], snippet_data[field])
 
-        self.assertEqual(data['owner'], user.username)
+        # Snippet생성과정에서 사용된 user가 owner인지 확인
+        self.assertEqual(
+            data['owner'],
+            # owner를 render할 때 UserListSerializer를 사용하므로,
+            # 임의로 생성한 'user'를 사용해 만든 UserListSerializer인스턴스의 'data'속성값(Rendering된 값)과 같은지 확인
+            UserListSerializer(user).data,
+        )
 
     def test_snippet_create_missing_code_raise_exception(self):
         """
@@ -154,15 +165,14 @@ class SnippetCreateTest(APITestCase):
         :return:
         """
         # code만 주어지지 않은 데이터
-
-        user = get_dummy_user()
-        self.client.force_authenticate(user)
         snippet_data = {
             'title': 'SnippetTitle',
             'linenos': True,
             'language': 'c',
             'style': 'monokai',
         }
+        user = get_dummy_user()
+        self.client.force_authenticate(user=user)
         response = self.client.post(
             self.URL,
             data=snippet_data,

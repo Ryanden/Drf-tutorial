@@ -1,11 +1,10 @@
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-
-from ..models import Snippet
-from ..serializers import SnippetBaseSerializer
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
+from ..models import Snippet
+from ..serializers import SnippetListSerializer
 
 __all__ = (
     'snippet_list',
@@ -22,17 +21,15 @@ class JSONResponse(HttpResponse):
 
 @csrf_exempt
 def snippet_list(request):
-
     if request.method == 'GET':
-
-        snippets = Snippet.objects.order_by('-pk')
-        serializer = SnippetBaseSerializer(snippets, many=True)
+        snippets = Snippet.objects.order_by('-created')
+        serializer = SnippetListSerializer(snippets, many=True)
         json_data = JSONRenderer().render(serializer.data)
         return HttpResponse(json_data, content_type='application/json')
 
     elif request.method == 'POST':
         data = JSONParser().parse(request)
-        serializer = SnippetBaseSerializer(data=data)
+        serializer = SnippetListSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return JSONResponse(serializer.data, status=201)
@@ -41,21 +38,18 @@ def snippet_list(request):
 
 @csrf_exempt
 def snippet_detail(request, pk):
-    """
-    코드 조각 조회, 업데이트, 삭제
-    """
     try:
         snippet = Snippet.objects.get(pk=pk)
     except Snippet.DoesNotExist:
         return HttpResponse(status=404)
 
     if request.method == 'GET':
-        serializer = SnippetBaseSerializer(snippet)
+        serializer = SnippetListSerializer(snippet)
         return JSONResponse(serializer.data)
 
     elif request.method == 'PUT':
         data = JSONParser().parse(request)
-        serializer = SnippetBaseSerializer(snippet, data=data)
+        serializer = SnippetListSerializer(snippet, data=data)
         if serializer.is_valid():
             serializer.save()
             return JSONResponse(serializer.data)
@@ -63,7 +57,7 @@ def snippet_detail(request, pk):
 
     elif request.method == 'PATCH':
         data = JSONParser().parse(request)
-        serializer = SnippetBaseSerializer(snippet, data=data, partial=True)
+        serializer = SnippetListSerializer(snippet, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return JSONResponse(serializer.data)

@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.urlpatterns import format_suffix_patterns
 
-from ..views import mix_in as views
+from ..views import mixins as views
 
 urlpatterns = [
     path('snippets/', views.SnippetList.as_view(), name='snippet-list'),
