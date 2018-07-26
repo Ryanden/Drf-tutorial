@@ -57,7 +57,7 @@ class SnippetListTest(APITestCase):
         # print('페이지카운트:', p.count)
         # print('자료:', p.object_list)
 
-        # response로 받은 JSON데이터의 길이와
+        # response로 받은 results의 count길이와
         # Snippet테이블의 자료수(COUNT)가 같은지
         self.assertEqual(data['count'], Snippet.objects.count())
 
@@ -72,8 +72,19 @@ class SnippetListTest(APITestCase):
                 code=f'a = {i}',
                 owner=user,
             )
-        response = self.client.get(self.URL)
-        data = json.loads(response.content)
+
+        pk_list = []
+        page = 1
+        while True:
+            response = self.client.get(self.URL, {'page': page})
+            data = json.loads(response.content)
+            pk_list += [item['pk'] for item in data['results']]
+            if data['next']:
+                page += 1
+            else:
+                break
+        # JSON으로 전달받은 데이터에서 pk만 꺼낸 리스트와 쿼리셋으로 만든 리스트를 슬라이스해서 비교
+        self.assertEqual(pk_list, list(Snippet.objects.order_by('-created').values_list('pk', flat=True)))
         # snippets = Snippet.objects.order_by('-created')
         #
         # # response에 전달된 JSON string을 파싱한 Python 객체를 순회하며 'pk'값만 꺼냄
@@ -85,12 +96,6 @@ class SnippetListTest(APITestCase):
         # snippets_pk_list = []
         # for snippet in snippets:
         #     snippets_pk_list.append(snippet.pk)
-
-        # DB에서 created역순으로 pk값만 가져온 QuerySet으로 만든 리스트
-        snippet_list = list(Snippet.objects.order_by('-created').values_list('pk', flat=True))
-
-        # JSON으로 전달받은 데이터에서 pk만 꺼낸 리스트와 쿼리셋으로 만든 리스트를 슬라이스해서 비교
-        self.assertEqual([item['pk'] for item in data['results']], snippet_list[:3])
 
 
 CREATE_DATA = '''{
