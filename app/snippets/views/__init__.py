@@ -1,1 +1,1 @@
-# from .django_view import *
+from .django_view import *
